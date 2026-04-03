@@ -1,9 +1,13 @@
 import { useParams, Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { products, reviews } from "@/data/products";
 import { useCart } from "@/context/CartContext";
 import { Star, ShoppingCart, Heart, Truck, Shield, ChevronRight, Minus, Plus } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
+import LearnBeforeYouBuy from "@/components/LearnBeforeYouBuy";
+import RecentlyViewed from "@/components/RecentlyViewed";
+import { trackView } from "@/components/RecentlyViewed";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -12,6 +16,11 @@ const ProductDetail = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [wishlisted, setWishlisted] = useState(false);
+  const [activeTab, setActiveTab] = useState<"description" | "usage" | "projects">("description");
+
+  useEffect(() => {
+    if (id) trackView(id);
+  }, [id]);
 
   if (!product) {
     return (
@@ -28,6 +37,12 @@ const ProductDetail = () => {
 
   const similar = products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
 
+  const tabs = [
+    { id: "description" as const, label: "Description" },
+    { id: "usage" as const, label: "Usage" },
+    { id: "projects" as const, label: "Projects" },
+  ];
+
   return (
     <div className="container py-6">
       {/* Breadcrumb */}
@@ -39,29 +54,43 @@ const ProductDetail = () => {
         <span className="text-foreground truncate max-w-[200px]">{product.title}</span>
       </nav>
 
-      <div className="grid md:grid-cols-2 gap-8 animate-fade-in">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4 }}
+        className="grid md:grid-cols-2 gap-8"
+      >
         {/* Images */}
         <div>
-          <div className="relative aspect-square rounded-lg overflow-hidden bg-muted mb-3 group">
-            <img
-              src={product.images[selectedImage]}
-              alt={product.title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-125 cursor-zoom-in"
-            />
+          <div className="relative aspect-square rounded-xl overflow-hidden bg-muted mb-3 group">
+            <AnimatePresence mode="wait">
+              <motion.img
+                key={selectedImage}
+                initial={{ opacity: 0, scale: 1.05 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                src={product.images[selectedImage]}
+                alt={product.title}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-125 cursor-zoom-in"
+              />
+            </AnimatePresence>
             {product.badge && (
-              <span className="absolute top-3 left-3 bg-deal text-deal-foreground text-xs font-bold px-3 py-1 rounded">{product.badge}</span>
+              <span className="absolute top-3 left-3 bg-deal text-deal-foreground text-xs font-bold px-3 py-1 rounded-lg">{product.badge}</span>
             )}
           </div>
           {product.images.length > 1 && (
             <div className="flex gap-2">
               {product.images.map((img, i) => (
-                <button
+                <motion.button
                   key={i}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setSelectedImage(i)}
                   className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${i === selectedImage ? "border-primary" : "border-border hover:border-muted-foreground"}`}
                 >
                   <img src={img} alt="" className="w-full h-full object-cover" />
-                </button>
+                </motion.button>
               ))}
             </div>
           )}
@@ -95,7 +124,58 @@ const ProductDetail = () => {
             <p className="text-xs text-muted-foreground mt-1">Inclusive of all taxes</p>
           </div>
 
-          <p className="text-sm text-muted-foreground mb-4">{product.description}</p>
+          {/* Tabs: Description / Usage / Projects */}
+          <div className="flex gap-1 mb-4 bg-muted p-1 rounded-xl">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`relative flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === tab.id ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {activeTab === tab.id && (
+                  <motion.div
+                    layoutId="product-tab-bg"
+                    className="absolute inset-0 bg-card rounded-lg shadow-sm"
+                    transition={{ type: "spring", duration: 0.4, bounce: 0.15 }}
+                  />
+                )}
+                <span className="relative">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              transition={{ duration: 0.15 }}
+              className="mb-4"
+            >
+              {activeTab === "description" && (
+                <p className="text-sm text-muted-foreground">{product.description}</p>
+              )}
+              {activeTab === "usage" && (
+                <div className="text-sm text-muted-foreground">
+                  <p className="mb-2">This product is commonly used in:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Professional audio production and mixing</li>
+                    <li>Everyday commuting and travel</li>
+                    <li>Gaming and virtual meetings</li>
+                    <li>Fitness and outdoor activities</li>
+                  </ul>
+                </div>
+              )}
+              {activeTab === "projects" && (
+                <div className="text-sm text-muted-foreground">
+                  <p>Explore creative projects you can build with this product. Check the "Learn Before You Buy" section below for detailed tutorials and code.</p>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
 
           {/* Features */}
           {product.features && (
@@ -120,17 +200,25 @@ const ProductDetail = () => {
           {/* Quantity + Add to cart */}
           {product.inStock && (
             <div className="flex items-center gap-3 mb-4">
-              <div className="flex items-center border border-border rounded-lg">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-2 hover:bg-muted transition-colors"><Minus className="w-4 h-4" /></button>
+              <div className="flex items-center border border-border rounded-xl">
+                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-2 hover:bg-muted transition-colors rounded-l-xl"><Minus className="w-4 h-4" /></button>
                 <span className="px-4 text-sm font-medium">{quantity}</span>
-                <button onClick={() => setQuantity(quantity + 1)} className="p-2 hover:bg-muted transition-colors"><Plus className="w-4 h-4" /></button>
+                <button onClick={() => setQuantity(quantity + 1)} className="p-2 hover:bg-muted transition-colors rounded-r-xl"><Plus className="w-4 h-4" /></button>
               </div>
-              <button onClick={() => addToCart(product, quantity)} className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors">
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => addToCart(product, quantity)}
+                className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3 rounded-xl font-semibold hover:bg-primary/90 transition-colors"
+              >
                 <ShoppingCart className="w-5 h-5" /> Add to Cart
-              </button>
-              <button onClick={() => setWishlisted(!wishlisted)} className={`p-3 rounded-lg border transition-colors ${wishlisted ? "bg-deal/10 border-deal text-deal" : "border-border hover:bg-muted"}`}>
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setWishlisted(!wishlisted)}
+                className={`p-3 rounded-xl border transition-colors ${wishlisted ? "bg-deal/10 border-deal text-deal" : "border-border hover:bg-muted"}`}
+              >
                 <Heart className={`w-5 h-5 ${wishlisted ? "fill-current" : ""}`} />
-              </button>
+              </motion.button>
             </div>
           )}
 
@@ -140,14 +228,24 @@ const ProductDetail = () => {
             <div className="flex items-center gap-2 text-sm text-muted-foreground"><Shield className="w-4 h-4 text-primary" /> 1 Year Warranty</div>
           </div>
         </div>
-      </div>
+      </motion.div>
+
+      {/* Learn Before You Buy */}
+      <LearnBeforeYouBuy productId={product.id} />
 
       {/* Reviews */}
       <section className="mt-12">
         <h2 className="text-xl font-bold text-foreground mb-4">Customer Reviews</h2>
         <div className="space-y-4">
-          {reviews.map((review) => (
-            <div key={review.id} className="bg-card border border-border rounded-lg p-4 animate-fade-in-up">
+          {reviews.map((review, i) => (
+            <motion.div
+              key={review.id}
+              initial={{ opacity: 0, y: 15 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.05 }}
+              className="bg-card border border-border rounded-xl p-4"
+            >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">{review.userName[0]}</div>
                 <div>
@@ -162,10 +260,13 @@ const ProductDetail = () => {
               </div>
               <p className="text-sm text-muted-foreground">{review.comment}</p>
               <p className="text-xs text-muted-foreground mt-2">{review.helpful} people found this helpful</p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
+
+      {/* Recently Viewed */}
+      <RecentlyViewed excludeId={product.id} />
 
       {/* Similar products */}
       {similar.length > 0 && (

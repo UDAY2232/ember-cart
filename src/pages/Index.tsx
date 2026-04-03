@@ -1,6 +1,9 @@
 import HeroCarousel from "@/components/HeroCarousel";
 import ProductSection from "@/components/ProductSection";
+import ProjectsSection from "@/components/ProjectsSection";
+import RecentlyViewed from "@/components/RecentlyViewed";
 import { products } from "@/data/products";
+import { motion } from "framer-motion";
 import { Truck, Shield, RotateCcw, Headphones } from "lucide-react";
 
 const features = [
@@ -22,8 +25,15 @@ const Index = () => {
       {/* Features bar */}
       <div className="bg-card border-b border-border">
         <div className="container py-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-          {features.map((f) => (
-            <div key={f.title} className="flex items-center gap-3 animate-fade-in">
+          {features.map((f, i) => (
+            <motion.div
+              key={f.title}
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="flex items-center gap-3"
+            >
               <div className="p-2 rounded-lg bg-accent">
                 <f.icon className="w-5 h-5 text-accent-foreground" />
               </div>
@@ -31,7 +41,7 @@ const Index = () => {
                 <p className="text-sm font-semibold text-foreground">{f.title}</p>
                 <p className="text-xs text-muted-foreground">{f.desc}</p>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -39,7 +49,14 @@ const Index = () => {
       <div className="container">
         <ProductSection title="🔥 Today's Deals" products={deals} viewAllLink="/products?deals=true" />
         <ProductSection title="⭐ Top Rated" products={topRated} />
+
+        {/* Start Building Projects */}
+        <ProjectsSection />
+
         <ProductSection title="🔄 Trending Now" products={trending} />
+
+        {/* Recently Viewed */}
+        <RecentlyViewed />
       </div>
     </div>
   );

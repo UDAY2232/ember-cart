@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Star, Heart, ShoppingCart } from "lucide-react";
+import { motion } from "framer-motion";
 import { Product } from "@/data/products";
 import { useCart } from "@/context/CartContext";
 import { useState } from "react";
@@ -17,9 +18,13 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
     : 0;
 
   return (
-    <div
-      className="group bg-card rounded-lg border border-border overflow-hidden hover-lift animate-fade-in-up"
-      style={{ animationDelay: `${index * 50}ms` }}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.05, duration: 0.3 }}
+      whileHover={{ y: -6, transition: { duration: 0.2 } }}
+      className="group bg-card rounded-xl border border-border overflow-hidden shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-shadow duration-300"
     >
       {/* Image */}
       <Link to={`/product/${product.id}`} className="relative block overflow-hidden aspect-square">
@@ -30,16 +35,18 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
           loading="lazy"
         />
         {product.badge && (
-          <span className="absolute top-2 left-2 bg-deal text-deal-foreground text-[10px] font-bold px-2 py-1 rounded">
+          <span className="absolute top-2 left-2 bg-deal text-deal-foreground text-[10px] font-bold px-2 py-1 rounded-lg">
             {product.badge}
           </span>
         )}
         <button
           onClick={(e) => { e.preventDefault(); setWishlisted(!wishlisted); }}
-          className="absolute top-2 right-2 p-1.5 bg-card/80 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-card"
+          className="absolute top-2 right-2 p-1.5 bg-card/80 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-card"
         >
           <Heart className={`w-4 h-4 transition-colors ${wishlisted ? "fill-deal text-deal" : "text-muted-foreground"}`} />
         </button>
+        {/* Glow overlay on hover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </Link>
 
       {/* Content */}
@@ -79,16 +86,17 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
           <span className={`text-xs ${product.inStock ? "text-success" : "text-deal"}`}>
             {product.inStock ? "In Stock" : "Out of Stock"}
           </span>
-          <button
+          <motion.button
+            whileTap={{ scale: 0.9 }}
             onClick={() => product.inStock && addToCart(product)}
             disabled={!product.inStock}
             className="p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ShoppingCart className="w-4 h-4" />
-          </button>
+          </motion.button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
